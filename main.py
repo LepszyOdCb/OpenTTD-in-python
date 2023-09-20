@@ -5,37 +5,52 @@ import os
 # Inicjalizacja Pygame
 pygame.init()
 
-# Ustawienia okna
-screen_width = 800
-screen_height = 800
-cell_size = 32  # Rozmiar komórki w siatce
-rows = 25  # Liczba wierszy
-cols = 25  # Liczba kolumn
+# Stałe
+SCREEN_WIDTH = 700
+SCREEN_HEIGHT = 700
+GRID_SIZE = 35
+GRID_ROWS = SCREEN_HEIGHT // GRID_SIZE
+GRID_COLS = SCREEN_WIDTH // GRID_SIZE
 
-# Inicjalizacja okna
-screen = pygame.display.set_mode((screen_width, screen_height))
-pygame.display.set_caption("Siatka 25x25")
+# Kolory
+WHITE = (255, 255, 255)
+BLACK = (0, 0, 0)
 
-# Ścieżka do pliku CSV
-csv_file_path = 'grid_positions.csv'
+# Typy torów
+TRACK_TYPES = {
+    1: ("left-middle", "right-middle"),
+    2: ("top-middle", "bottom-middle"),
+    3: ("left-middle", "bottom-middle"),
+    4: ("right-middle", "bottom-middle"),
+    5: ("left-middle", "top-middle"),
+    6: ("right-middle", "top-middle"),
+}
 
-# Sprawdzenie czy plik CSV istnieje, jeśli nie to utworzenie go
-if not os.path.exists(csv_file_path):
-    with open(csv_file_path, 'w', newline='') as csvfile:
-        fieldnames = ['Row', 'Column', 'Position']
-        writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-        writer.writeheader()
+# Inicjalizacja ekranu
+screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+pygame.display.set_caption("OpenTTD-Inspired Game")
 
-# Słownik przechowujący pozycje dla każdej kratki w siatce
-grid_positions = {(i, j): f'{i + 1},{j + 1}' for i in range(rows) for j in range(cols)}
+# Inicjalizacja siatki
+grid = [[0] * GRID_COLS for _ in range(GRID_ROWS)]
 
-# Zapisanie danych do pliku CSV
-with open(csv_file_path, 'a', newline='') as csvfile:
-    fieldnames = ['Row', 'Column', 'Position']
-    writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+# Słownik do przechowywania torów
+tracks = {}
 
-    for (row, col), position in grid_positions.items():
-        writer.writerow({'Row': row + 1, 'Column': col + 1, 'Position': position})
+# Aktualnie wybrany typ toru
+current_track_type = None
+
+# Sprawdzenie istnienia pliku CSV
+csv_file_exists = os.path.isfile("tracks.csv")
+
+# Jeśli plik CSV istnieje, wczytaj dane
+if csv_file_exists:
+    with open("tracks.csv", "r", newline="") as csvfile:
+        reader = csv.reader(csvfile)
+        for row_data in reader:
+            row = int(row_data[0])
+            col = int(row_data[1])
+            track_types = {int(i) for i in row_data[2:]}
+            tracks[(row, col)] = track_types
 
 # Główna pętla gry
 running = True
@@ -43,22 +58,56 @@ while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
-        elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:  # LPM
-            mouse_x, mouse_y = pygame.mouse.get_pos()
-            row = mouse_y // cell_size
-            col = mouse_x // cell_size
-            print(f"Kliknięto na pozycji: {row + 1},{col + 1}")
+        elif event.type == pygame.KEYDOWN:
+            if event.key in range(pygame.K_1, pygame.K_6 + 1):
+                current_track_type = event.key - pygame.K_0
+        elif event.type == pygame.MOUSEBUTTONDOWN:
+            if current_track_type is not None:
+                row, col = event.pos[1] // GRID_SIZE, event.pos[0] // GRID_SIZE
+                if 0 <= row < GRID_ROWS and 0 <= col < GRID_COLS:
+                    tracks[(row, col)] = tracks.get((row, col), set()).union({current_track_type})
 
     # Wyczyszczenie ekranu
-    screen.fill((255, 255, 255))
+    screen.fill(WHITE)
 
     # Rysowanie siatki
-    for i in range(rows):
-        for j in range(cols):
-            pygame.draw.rect(screen, (0, 0, 0), (j * cell_size, i * cell_size, cell_size, cell_size), 1)
+    for row in range(GRID_ROWS):
+        for col in range(GRID_COLS):
+            pygame.draw.rect(screen, BLACK, (col * GRID_SIZE, row * GRID_SIZE, GRID_SIZE, GRID_SIZE), 1)
+
+    # Rysowanie torów
+    for (row, col), track_types in tracks.items():
+        for track_type in track_types:
+            start, end = TRACK_TYPES[track_type]
+            if start == "left-middle":
+                start_pos = (col * GRID_SIZE, row * GRID_SIZE + GRID_SIZE // 2)
+            elif start == "right-middle":
+                start_pos = (col * GRID_SIZE + GRID_SIZE, row * GRID_SIZE + GRID_SIZE // 2)
+            elif start == "top-middle":
+                start_pos = (col * GRID_SIZE + GRID_SIZE // 2, row * GRID_SIZE)
+            elif start == "bottom-middle":
+                start_pos = (col * GRID_SIZE + GRID_SIZE // 2, row * GRID_SIZE + GRID_SIZE)
+
+            if end == "left-middle":
+                end_pos = (col * GRID_SIZE, row * GRID_SIZE + GRID_SIZE // 2)
+            elif end == "right-middle":
+                end_pos = (col * GRID_SIZE + GRID_SIZE, row * GRID_SIZE + GRID_SIZE // 2)
+            elif end == "top-middle":
+                end_pos = (col * GRID_SIZE + GRID_SIZE // 2, row * GRID_SIZE)
+            elif end == "bottom-middle":
+                end_pos = (col * GRID_SIZE + GRID_SIZE // 2, row * GRID_SIZE + GRID_SIZE)
+
+            pygame.draw.line(screen, BLACK, start_pos, end_pos, 3)
 
     # Aktualizacja ekranu
     pygame.display.flip()
 
-# Zakończenie pracy z Pygame
+# Zapisywanie torów do pliku CSV
+with open("tracks.csv", "w", newline="") as csvfile:
+    writer = csv.writer(csvfile)
+    for (row, col), track_types in tracks.items():
+        row_data = [row, col] + [1 if i in track_types else 0 for i in range(1, 7)]
+        writer.writerow(row_data)
+
+# Zamknięcie Pygame
 pygame.quit()
