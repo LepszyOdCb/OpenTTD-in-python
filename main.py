@@ -42,7 +42,7 @@ current_track_type = None
 # Sprawdzenie istnienia pliku CSV
 csv_file_exists = os.path.isfile("tracks.csv")
 
-# Jeśli plik CSV istnieje, wczytaj dane
+# Jeśli plik CSV istnieje, wczytaj dane o torach
 if csv_file_exists:
     with open("tracks.csv", "r", newline="") as csvfile:
         reader = csv.reader(csvfile)
@@ -78,26 +78,28 @@ while running:
     # Rysowanie torów
     for (row, col), track_types in tracks.items():
         for track_type in track_types:
-            start, end = TRACK_TYPES[track_type]
-            if start == "left-middle":
-                start_pos = (col * GRID_SIZE, row * GRID_SIZE + GRID_SIZE // 2)
-            elif start == "right-middle":
-                start_pos = (col * GRID_SIZE + GRID_SIZE, row * GRID_SIZE + GRID_SIZE // 2)
-            elif start == "top-middle":
-                start_pos = (col * GRID_SIZE + GRID_SIZE // 2, row * GRID_SIZE)
-            elif start == "bottom-middle":
-                start_pos = (col * GRID_SIZE + GRID_SIZE // 2, row * GRID_SIZE + GRID_SIZE)
+            if track_type in TRACK_TYPES:
+                start, end = TRACK_TYPES[track_type]
 
-            if end == "left-middle":
-                end_pos = (col * GRID_SIZE, row * GRID_SIZE + GRID_SIZE // 2)
-            elif end == "right-middle":
-                end_pos = (col * GRID_SIZE + GRID_SIZE, row * GRID_SIZE + GRID_SIZE // 2)
-            elif end == "top-middle":
-                end_pos = (col * GRID_SIZE + GRID_SIZE // 2, row * GRID_SIZE)
-            elif end == "bottom-middle":
-                end_pos = (col * GRID_SIZE + GRID_SIZE // 2, row * GRID_SIZE + GRID_SIZE)
+                if start == "left-middle":
+                    start_pos = (col * GRID_SIZE, row * GRID_SIZE + GRID_SIZE // 2)
+                elif start == "right-middle":
+                    start_pos = (col * GRID_SIZE + GRID_SIZE, row * GRID_SIZE + GRID_SIZE // 2)
+                elif start == "top-middle":
+                    start_pos = (col * GRID_SIZE + GRID_SIZE // 2, row * GRID_SIZE)
+                elif start == "bottom-middle":
+                    start_pos = (col * GRID_SIZE + GRID_SIZE // 2, row * GRID_SIZE + GRID_SIZE)
 
-            pygame.draw.line(screen, BLACK, start_pos, end_pos, 3)
+                if end == "left-middle":
+                    end_pos = (col * GRID_SIZE, row * GRID_SIZE + GRID_SIZE // 2)
+                elif end == "right-middle":
+                    end_pos = (col * GRID_SIZE + GRID_SIZE, row * GRID_SIZE + GRID_SIZE // 2)
+                elif end == "top-middle":
+                    end_pos = (col * GRID_SIZE + GRID_SIZE // 2, row * GRID_SIZE)
+                elif end == "bottom-middle":
+                    end_pos = (col * GRID_SIZE + GRID_SIZE // 2, row * GRID_SIZE + GRID_SIZE)
+
+                pygame.draw.line(screen, BLACK, start_pos, end_pos, 3)
 
     # Aktualizacja ekranu
     pygame.display.flip()
@@ -106,7 +108,7 @@ while running:
 with open("tracks.csv", "w", newline="") as csvfile:
     writer = csv.writer(csvfile)
     for (row, col), track_types in tracks.items():
-        row_data = [row, col] + [1 if i in track_types else 0 for i in range(1, 7)]
+        row_data = [row, col] + [i for i in track_types]
         writer.writerow(row_data)
 
 # Zamknięcie Pygame
