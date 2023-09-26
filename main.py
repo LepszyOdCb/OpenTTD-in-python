@@ -65,56 +65,58 @@ with open("tracks.csv", "r", newline="") as csvfile:
         track_types = {i for i in range(1, 9) if int(row_data[i + 1]) == 1}  # Uwzględnienie torów typu 7 i 8
         tracks[(row, col)] = track_types
 
-# Funkcja do rysowania kwadratów z grafikami torów
-def draw_track_icons():
-    icon_size = 50
-    icon_padding = 10
-    start_x = (SCREEN_WIDTH - (8 * icon_size + 7 * icon_padding)) // 2
-    start_y = 10
-
-    for i in range(1, 9):
-        image = track_images[i]
-        icon_rect = pygame.Rect(start_x, start_y, icon_size, icon_size)
-        screen.blit(image, icon_rect)
-        start_x += icon_size + icon_padding
-
 # Główna pętla gry
 running = True
 while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
+        elif event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_1:
+                current_track_type = 1
+            elif event.key == pygame.K_2:
+                current_track_type = 2
+            elif event.key == pygame.K_3:
+                current_track_type = 3
+            elif event.key == pygame.K_4:
+                current_track_type = 4
+            elif event.key == pygame.K_5:
+                current_track_type = 5
+            elif event.key == pygame.K_6:
+                current_track_type = 6
+            elif event.key == pygame.K_7:
+                current_track_type = 7
+            elif event.key == pygame.K_8:
+                current_track_type = 8
+            elif event.key == pygame.K_w:
+                camera_y += 1
+            elif event.key == pygame.K_s:
+                camera_y -= 1
+            elif event.key == pygame.K_a:
+                camera_x += 1
+            elif event.key == pygame.K_d:
+                camera_x -= 1
         elif event.type == pygame.MOUSEBUTTONDOWN:
-            # Sprawdzenie kliknięcia w obszarze ikon torów
-            icon_size = 50
-            icon_padding = 10
-            start_x = (SCREEN_WIDTH - (8 * icon_size + 7 * icon_padding)) // 2
-            start_y = 10
-            for i in range(1, 9):
-                icon_rect = pygame.Rect(start_x, start_y, icon_size, icon_size)
-                if icon_rect.collidepoint(event.pos):
-                    current_track_type = i
-                    break
-                start_x += icon_size + icon_padding
-
-            # Sprawdzenie kliknięcia w siatkę gry
-            if 0 <= event.pos[0] < SCREEN_WIDTH and 0 <= event.pos[1] < SCREEN_HEIGHT:
+            if current_track_type is not None:
                 row, col = event.pos[1] // GRID_SIZE + camera_y, event.pos[0] // GRID_SIZE + camera_x
                 if 0 <= row < GRID_ROWS and 0 <= col < GRID_COLS:
                     if current_track_type == 7:
-                        if 1 in tracks.get((row, col), set()) and not any(track == 7 for track in tracks.get((row, col), set())):
-                            tracks[(row, col)] = tracks.get((row, col), set()).union({current_track_type})
+                        # Sprawdzenie, czy w danym miejscu jest tor typu 1
+                        if 1 in tracks.get((row, col), set()):
+                            # Sprawdzenie, czy w danym miejscu nie ma już toru typu 7
+                            if not any(track == 7 for track in tracks.get((row, col), set())):
+                                tracks[(row, col)] = tracks.get((row, col), set()).union({current_track_type})
                     elif current_track_type == 8:
-                        if 2 in tracks.get((row, col), set()) and not any(track == 8 for track in tracks.get((row, col), set())):
-                            tracks[(row, col)] = tracks.get((row, col), set()).union({current_track_type})
+                        # Sprawdzenie, czy w danym miejscu jest tor typu 2
+                        if 2 in tracks.get((row, col), set()):
+                            # Sprawdzenie, czy w danym miejscu nie ma już toru typu 8
+                            if not any(track == 8 for track in tracks.get((row, col), set())):
+                                tracks[(row, col)] = tracks.get((row, col), set()).union({current_track_type})
                     else:
                         tracks[(row, col)] = tracks.get((row, col), set()).union({current_track_type})
 
     # Wyczyszczenie ekranu
     screen.fill(WHITE)
-
-    # Rysowanie kwadratów z ikonami torów
-    draw_track_icons()
 
     # Rysowanie siatki
     for row in range(GRID_ROWS):
